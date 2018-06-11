@@ -1,0 +1,39 @@
+version: "3.1"
+services:
+
+    php:
+      links:
+        - database
+      build: phpdocker/php-fpm
+      working_dir: /pub/www/nornik
+      env_file: .env
+      volumes:
+          - ./basic/:/www:cached
+          - ./phpdocker/php-fpm/php-ini-overrides.ini:/etc/php5/fpm/conf.d/99-overrides.ini
+
+    database:
+      image: mysql:5.7
+      working_dir: /pub/www/nornik
+      env_file: .env
+      volumes:
+        - ./phpdocker/mysql/init-scripts:/docker-entrypoint-initdb.d
+        - ./phpdocker/mysql/conf.d/bx.cnf:/etc/mysql/conf.d/bx.cnf
+      environment:
+        - MYSQL_ROOT_PASSWORD=${DBPassword}
+        - MYSQL_DATABASE=${DBName}
+        - MYSQL_USER=${DBLogin}
+        - MYSQL_PASSWORD=${DBPassword}
+      ports:
+       - "3307:3306"
+
+    webserver:
+      image: nginx:alpine
+      working_dir: /www
+      volumes:
+          - ./basic/:/www:cached
+          - ./phpdocker/nginx/yii.conf:/etc/nginx/conf.d/default.conf
+      ports:
+       - "80:80"
+
+networks:
+  sockets:
